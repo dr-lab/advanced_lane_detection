@@ -144,67 +144,88 @@ To visualize the perspective transformation clear, bellow is one sample which do
 |![birdview4][birdview4] |
 
 ### Line Detection
-Line detection is done on the un-distorted image, which also have perspective transformed. 
+Line detection is done on the un-distorted image, which also have perspective transformed. The logic of line detection is from the course video, 
+It will find_lanes function will detect left and right lanes from the warped image and 'n' windows will be used to identify peaks of histograms.
+ 
+ In this implementation, the histogram is playing a key role, the place of max value in the left side of the middle will be start point (x) of the left line, while the same for the right line.
+ 
+ And a moving window is used to detect the next mean of the points (above a threshold), then use polyfit function to get the parameters of the poly line.
+ 
+    left_fit = np.polyfit(left_lane_y, left_lane_x, 2)
+ 
+At the end of the line painting, image will be transformed back to original perspective from the bird-view perspective. In the final image, we paint a green on the area between two detected lines such that the lane area is identified clearly.
+
+|![polyline1][polyline1] |
+|![polyline2][polyline2] |
+|![polyline3][polyline3] |
+|![polyline4][polyline4] |
 
 
-#### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
 
-The code for my perspective transform includes a function called `warper()`, which appears in lines 1 through 8 in the file `example.py` (output_images/examples/example.py) (or, for example, in the 3rd code cell of the IPython notebook).  The `warper()` function takes as inputs an image (`img`), as well as source (`src`) and destination (`dst`) points.  I chose the hardcode the source and destination points in the following manner:
+### Master Function for Image Process
+Bellow is the master Function which wrapper all the Functions we discussed above, and it will be passed to the video process step.
 
-```python
-src = np.float32(
-    [[(img_size[0] / 2) - 55, img_size[1] / 2 + 100],
-    [((img_size[0] / 6) - 10), img_size[1]],
-    [(img_size[0] * 5 / 6) + 60, img_size[1]],
-    [(img_size[0] / 2 + 55), img_size[1] / 2 + 100]])
-dst = np.float32(
-    [[(img_size[0] / 4), 0],
-    [(img_size[0] / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), 0]])
-```
+    def process_image(image):
+        # Apply pipeline to the image to create black and white image
+        img = pipeline(image)
+        
+        
+        # Warp the image to make lanes parallel to each other
+        top_down, perspective_M, perspective_Minv = corners_unwarp(img, mtx, dist)
+        # Find the lines fitting to left and right lanes
+        a, b, c, lx, ly, rx, ry, curvature = fit_lanes(top_down)
+        # Return the original image with colored region
+        return draw_poly(image, top_down, a, b, c, lx, ly, rx, ry, perspective_Minv, curvature)
+        
+        
+ ### calculated the radius of curvature of the lane and the position of the vehicle with respect to center
+        
+The way to calculate the radius basically is bery roughly, and is way more from precision, but it do help giev some estimation of the curve. Bellow is the formula used 
 
-This resulted in the following source and destination points:
+First we define y-value where we want radius of curvature, for this I choose the maximum y-value, corresponding to the bottom of the image
 
-| Source        | Destination   | 
-|:-------------:|:-------------:| 
-| 585, 460      | 320, 0        | 
-| 203, 720      | 320, 720      |
-| 1127, 720     | 960, 720      |
-| 695, 460      | 960, 0        |
+    y_eval = np.max(yvals)
+    
+Then since our image is pixel based, so need to do some math on the pixels. I use following algorithm to transform pixel to meter.    
+    
+    ym_per_pix = 30/720 # meters per pixel in y dimension
+    xm_per_pix = 3.7/700 # meteres per pixel in x dimension
+    fit_cr = np.polyfit(yvals*ym_per_pix, fitx*xm_per_pix, 2)
+    
+Finally is the formula to calculate the curvature.    
+    
+    curverad = ((1 + (2*fit_cr[0]*y_eval + fit_cr[1])**2)**1.5) \
+                                 /np.absolute(2*fit_cr[0])
+        
+When we do car position calculation, we use the image size which is pixel based. See bellow we use some hard coded pixel size to decide left or right in the lane. 
+ 
+    position = image_shape[1]/2
+    left  = np.min(pts[(pts[:,1] < position) & (pts[:,0] > 700)][:,1])
+    right = np.max(pts[(pts[:,1] > position) & (pts[:,0] > 700)][:,1])
+    center = (left + right)/2
+    # Define conversions in x and y from pixels space to meters
+    xm_per_pix = 3.7/700 # meteres per pixel in x dimension    
+    return (position - center)*xm_per_pix  
+          
+          
+**Note:** One thing is very important, that the calculation need to based on the original image perspective, not the bird view perspective.          
+        
 
-I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
+### Final Video Processing and Generation
 
-![alt text][image4]
+I use the same way used in the P1 to process the video frame by frame, and then write to a new video mp4 file.
 
-#### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
+The final video can be found from [video](./project_video_output.mp4)
 
-Then I did some other stuff and fit my lane lines with a 2nd order polynomial kinda like this:
 
-![alt text][image5]
-
-#### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
-
-I did this in lines # through # in my code in `my_other_file.py`
-
-#### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
-
-I implemented this step in lines # through # in my code in `yet_another_file.py` in the function `map_lane()`.  Here is an example of my result on a test image:
-
-![alt text][image6]
-
----
-
-### Pipeline (video)
-
-#### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
-
-Here's a [link to my video result](./project_video.mp4)
 
 ---
 
 ### Discussion
 
-#### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
+1. In this project, I use sobel which is different than the one used in P1, but same technologies like grey, GausioanBlur, are used in the pre-steps to pre-process images.
+2. There are more other ways used here than P1, like camera calibration, perspective transformation, poly line fit.
+ 3. For next step, need more time to tune the line detection algorithms, to work on the challenge videos. 
+ 4. Performance wise, there should still some space which can be improved, e.g. re-use previous frame's finding, not full-scan the each frame.
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+  
