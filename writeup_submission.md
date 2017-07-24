@@ -27,6 +27,11 @@ The goals / steps of this project are the following:
 [calib3]: ./output_images/calibration/3.png "calib3 image"
 [calib4]: ./output_images/calibration/4.png "calib4 image"
 
+[corner1]: ./output_images/calibration/corner1.png "corner1 image"
+[corner2]: ./output_images/calibration/corner2.png "corner2 image"
+[corner3]: ./output_images/calibration/corner3.png "corner3 image"
+[corner4]: ./output_images/calibration/corner4.png "corner4 image"
+
 [pipeline1]: ./output_images/pipeline/1.png "pipeline1 image"
 [pipeline2]: ./output_images/pipeline/2.png "pipeline2 image"
 [pipeline3]: ./output_images/pipeline/3.png "pipeline3 image"
@@ -49,7 +54,7 @@ The goals / steps of this project are the following:
 
 Bellow is the lane detection video output (in gif ), video can be downloaded in the root folder in the repo.
 
- [gif][gif] 
+ ![gif][gif] 
 
 ### Camera Calibration
 
@@ -61,6 +66,13 @@ Bellow line is to get the corner points of each calibration images,
 
     # Find the chessboard corners
     ret, corners = cv2.findChessboardCorners(gray, (9,6),None)
+    
+Here are some samples we paint the corners, highlighted in red dots.
+    ![corner1][corner1]
+    ![corner2][corner2] 
+    ![corner3][corner3] 
+    ![corner4][corner4] 
+    
 
 Then calculate the matrix and distortion coefficiencies
 
@@ -73,10 +85,10 @@ In the return, we only need to use two parameters, mtx and dist. Others can be i
 
 Following are some samples of the un-distorted images.
 
-|![calib1][calib1] |
-|![calib2][calib2] |
-|![calib3][calib3] |
-|![calib4][calib4] |
+![calib1][calib1] 
+![calib2][calib2] 
+![calib3][calib3] 
+![calib4][calib4] 
   
 I start by preparing "object points", which will be the (x, y, z) coordinates of the chessboard corners in the world. Here I am assuming the chessboard is fixed on the (x, y) plane at z=0, such that the object points are the same for each calibration image.  Thus, `objp` is just a replicated array of coordinates, and `objpoints` will be appended with a copy of it every time I successfully detect all chessboard corners in a test image.  `imgpoints` will be appended with the (x, y) pixel position of each of the corners in the image plane with each successful chessboard detection.  
 
@@ -87,10 +99,10 @@ I then used the output `objpoints` and `imgpoints` to compute the camera calibra
 ### Pipeline for single image pre-processing
 
 To demonstrate this step, I will describe how I apply the distortion correction to the test images like this one:
-|![pipeline1][pipeline1] |
-|![pipeline2][pipeline2] |
-|![pipeline3][pipeline3] |
-|![pipeline4][pipeline4] |
+![pipeline1][pipeline1] 
+![pipeline2][pipeline2] 
+![pipeline3][pipeline3] 
+![pipeline4][pipeline4] 
 
 First step is do a Gaussian Blur on the image
 
@@ -138,10 +150,10 @@ Then use the cv2 transform the perspective
     
 To visualize the perspective transformation clear, bellow is one sample which do the transformation on the original color image. 
  (In our implementation, this step done on the grey image at the end of the image pre-processing pipeline)
-|![birdview1][birdview1] |
-|![birdview2][birdview2] |
-|![birdview3][birdview3] |
-|![birdview4][birdview4] |
+![birdview1][birdview1] 
+![birdview2][birdview2] 
+![birdview3][birdview3] 
+![birdview4][birdview4] 
 
 ### Line Detection
 Line detection is done on the un-distorted image, which also have perspective transformed. The logic of line detection is from the course video, 
@@ -155,10 +167,10 @@ It will find_lanes function will detect left and right lanes from the warped ima
  
 At the end of the line painting, image will be transformed back to original perspective from the bird-view perspective. In the final image, we paint a green on the area between two detected lines such that the lane area is identified clearly.
 
-|![polyline1][polyline1] |
-|![polyline2][polyline2] |
-|![polyline3][polyline3] |
-|![polyline4][polyline4] |
+![polyline1][polyline1] 
+![polyline2][polyline2] 
+![polyline3][polyline3] 
+![polyline4][polyline4] 
 
 
 
