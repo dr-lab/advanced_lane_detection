@@ -81,7 +81,7 @@ Then calculate the matrix and distortion coefficiencies
     
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, img_size,None,None)
     
-In the return, we only need to use two parameters, mtx and dist. Others can be ignore in this project.
+In the return, we only need to use two parameters, **mtx** and **dist**. Others can be ignored in this project.
 
 Following are some samples of the un-distorted images.
 
@@ -121,18 +121,20 @@ Also convert to gray image
     
 Finally apply the sobel function for both X and Y, and combine them together
     
-    # Define sobel kernel size
+Define sobel kernel size. Empirically use 7 as kernel size, some tuning may can get better detection results.
+
     ksize = 7
-    # Apply each of the thresholding functions
+    
+    
+Apply each of the thresholding functions. Here the threshold are empirical. (See last part of this write up of some discussions.)
+
     gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(10, 255))
     grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(60, 255))
     mag_binary = mag_thresh(gray, sobel_kernel=ksize, mag_thresh=(40, 255))
     dir_binary = dir_threshold(gray, sobel_kernel=ksize, thresh=(.65, 1.05))
-    # Combine all the thresholding information
-    combined = np.zeros_like(dir_binary)
-    combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1))] = 1
+
     
-At the end, one more step  which helps the image process time, is to crop the image of "area of interested"
+At the end, one more step  which helps shorten the image process time, is to crop the image of "area of interested".
 
     color_binary = region_of_interest(color_binary, vertices)
 
@@ -239,5 +241,6 @@ The final video can be found from [video](./project_video_output.mp4)
 2. There are more other ways used here than P1, like camera calibration, perspective transformation, poly line fit.
  3. For next step, need more time to tune the line detection algorithms, to work on the challenge videos. 
  4. Performance wise, there should still some space which can be improved, e.g. re-use previous frame's finding, not full-scan the each frame.
+ 5. We can spend more time on the paramters tuning, like "area of interestes", "sobel kernel size", I only use HLS space and S channel, we can try some other channel with proper filter threshold may can get better results. 
 
   
